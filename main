@@ -6,6 +6,14 @@ window_size = 1200, 800
 window = display.set_mode(window_size)
 clock = time.Clock()
 
+bg = image.load("fon.png").convert()
+bg = transform.scale(bg, window_size)
+
+player_img = image.load("player.png").convert_alpha()
+player_img = transform.scale(player_img, (100, 100))
+
+bg_x = 0
+
 player_rect = Rect(150, window_size[1]//2 - 100, 100, 100)
 
 def generate_pipes(count, pipe_width=140, gap=280, min_height=50, max_height=440, distance=650):
@@ -15,59 +23,85 @@ def generate_pipes(count, pipe_width=140, gap=280, min_height=50, max_height=440
         height = randint(min_height, max_height)
         top_pipe = Rect(start_x, 0, pipe_width, height)
         bottom_pipe = Rect(start_x, height + gap, pipe_width, window_size[1] - (height + gap))
-        pipes.extend([top_pipe, bottom_pipe])
+        pipes.append(top_pipe)
+        pipes.append(bottom_pipe)
         start_x += distance
     return pipes
 
+pies = generate_pipes(10)
 
-pies = generate_pipes(150)
 main_font = font.Font(None, 100)
+small_font = font.Font(None, 50)
+
 score = 0
 lose = False
+menu = True
 y_vel = 2
+
+button_rect = Rect(window_size[0]//2 - 150, window_size[1]//2 + 40, 300, 70)
 
 while True:
     for e in event.get():
         if e.type == QUIT:
             quit()
+        if e.type == MOUSEBUTTONDOWN:
+            if menu or lose:
+                if button_rect.collidepoint(mouse.get_pos()):
+                    menu = False
+                    lose = False
+                    score = 0
+                    pies = generate_pipes(10)
+                    player_rect.y = window_size[1]//2 - 100
+                    y_vel = 2
 
-    window.fill("sky blue")
-    draw.rect(window, "blue", player_rect)
+    bg_x -= 2
+    if bg_x <= -window_size[0]:
+        bg_x = 0
+
+    window.blit(bg, (bg_x, 0))
+    window.blit(bg, (bg_x + window_size[0], 0))
+
+    if menu:
+        title = main_font.render("FLAPPY GAME", True, (255,255,255))
+        window.blit(title, (window_size[0]//2 - title.get_width()//2, 200))
+
+        draw.rect(window, (100,200,100), button_rect, border_radius=10)
+        text = small_font.render("START", True, (0,0,0))
+        window.blit(text, (button_rect.centerx - text.get_width()//2,
+                           button_rect.centery - text.get_height()//2))
+
+        display.update()
+        clock.tick(60)
+        continue
+
+    window.blit(player_img, player_rect)
 
     for pie in pies[:]:
         if not lose:
             pie.x -= 10
+
         draw.rect(window, "yellow", pie)
 
-        if pie.x <= -100:
+        if pie.x <= -150:
             pies.remove(pie)
             score += 0.5
 
         if player_rect.colliderect(pie):
             lose = True
 
-    if len(pies) < 8:
-        pies += generate_pipes(150)
+    if len(pies) < 6:
+        pies += generate_pipes(6)
 
-    score_text = main_font.render(f"{int(score)}", True, (0, 0, 0))
-    center_text = window_size[0]//2 - score_text.get_rect().w
-    window.blit(score_text, (center_text, 40))
-
-    display.update()
-    clock.tick(60)
+    score_text = main_font.render(str(int(score)), True, (0,0,0))
+    window.blit(score_text, (window_size[0]//2 - score_text.get_width()//2, 40))
 
     keys = key.get_pressed()
+
     if keys[K_w] and not lose:
         player_rect.y -= 15
+
     if keys[K_s] and not lose:
         player_rect.y += 15
-
-    if keys[K_r] and lose:
-        lose = False
-        score = 0
-        pies = generate_pipes(150)
-        player_rect.y = window_size[1]//2 - 100
-        y_vel = 2
 
     if player_rect.y >= window_size[1] - player_rect.h:
         lose = True
@@ -75,3 +109,14 @@ while True:
     if lose:
         player_rect.y += y_vel
         y_vel *= 1.1
+
+        over_text = main_font.render("GAME OVER", True, (255,0,0))
+        window.blit(over_text, (window_size[0]//2 - over_text.get_width()//2, 220))
+
+        draw.rect(window, (200,100,100), button_rect, border_radius=10)
+        text = small_font.render("RESTART", True, (0,0,0))
+        window.blit(text, (button_rect.centerx - text.get_width()//2,
+                           button_rect.centery - text.get_height()//2))
+
+    display.update()
+    clock.tick(60)
