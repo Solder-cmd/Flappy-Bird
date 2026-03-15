@@ -1,5 +1,8 @@
 from pygame import *
 from random import randint
+import sounddevice as sd
+import scipy.io.wavfile as wav
+import numpy as np
 
 init()
 window_size = 1200, 800
@@ -38,7 +41,18 @@ lose = False
 menu = True
 y_vel = 2
 
+# настройки микрофона
+voice_threshold = 0.02
+samplerate = 44100
+duration = 0.05
+
 button_rect = Rect(window_size[0]//2 - 150, window_size[1]//2 + 40, 300, 70)
+
+def get_volume():
+    recording = sd.rec(int(duration * samplerate), samplerate=samplerate, channels=1)
+    sd.wait()
+    volume = np.linalg.norm(recording) / len(recording)
+    return volume
 
 while True:
     for e in event.get():
@@ -95,13 +109,14 @@ while True:
     score_text = main_font.render(str(int(score)), True, (0,0,0))
     window.blit(score_text, (window_size[0]//2 - score_text.get_width()//2, 40))
 
-    keys = key.get_pressed()
+    # управление голосом
+    volume = get_volume()
 
-    if keys[K_w] and not lose:
-        player_rect.y -= 15
-
-    if keys[K_s] and not lose:
-        player_rect.y += 15
+    if not lose:
+        if volume > voice_threshold:
+            player_rect.y -= 20  
+        else:
+            player_rect.y += 8    
 
     if player_rect.y >= window_size[1] - player_rect.h:
         lose = True
