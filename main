@@ -41,7 +41,6 @@ lose = False
 menu = True
 y_vel = 2
 
-# настройки микрофона
 voice_threshold = 0.02
 samplerate = 44100
 duration = 0.05
@@ -109,14 +108,13 @@ while True:
     score_text = main_font.render(str(int(score)), True, (0,0,0))
     window.blit(score_text, (window_size[0]//2 - score_text.get_width()//2, 40))
 
-    # управление голосом
     volume = get_volume()
 
     if not lose:
         if volume > voice_threshold:
-            player_rect.y -= 20  
+            player_rect.y -= 20
         else:
-            player_rect.y += 8    
+            player_rect.y += 8
 
     if player_rect.y >= window_size[1] - player_rect.h:
         lose = True
