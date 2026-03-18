@@ -1,8 +1,5 @@
 from pygame import *
-from random import randint
-import sounddevice as sd
-import scipy.io.wavfile as wav
-import numpy as np
+from random import randint, choice
 
 init()
 window_size = 1200, 800
@@ -14,10 +11,11 @@ bg = transform.scale(bg, window_size)
 
 player_img = image.load("player.png").convert_alpha()
 player_img = transform.scale(player_img, (100, 100))
+player_colors = [(255,0,0), (0,255,0), (0,0,255), (255,255,0)]
 
 bg_x = 0
-
 player_rect = Rect(150, window_size[1]//2 - 100, 100, 100)
+current_color = choice(player_colors)
 
 def generate_pipes(count, pipe_width=140, gap=280, min_height=50, max_height=440, distance=650):
     pipes = []
@@ -41,29 +39,14 @@ lose = False
 menu = True
 y_vel = 2
 
-voice_threshold = 0.02
-samplerate = 44100
-duration = 0.05
-
-last_save_time = 0  
-
 button_rect = Rect(window_size[0]//2 - 150, window_size[1]//2 + 40, 300, 70)
 
-def get_volume_and_save():
-    global last_save_time
-
-    recording = sd.rec(int(duration * samplerate), samplerate=samplerate, channels=1)
-    sd.wait()
-
-    volume = np.linalg.norm(recording) / len(recording)
-
-    if time.get_ticks() - last_save_time > 1000:
-        wav.write("voice.wav", samplerate, recording)
-        last_save_time = time.get_ticks()
-
-    return volume
+jump_height = 20
+fall_speed = 8
 
 while True:
+    keys = key.get_pressed()
+
     for e in event.get():
         if e.type == QUIT:
             quit()
@@ -76,6 +59,14 @@ while True:
                     pies = generate_pipes(10)
                     player_rect.y = window_size[1]//2 - 100
                     y_vel = 2
+
+    if not menu and not lose:
+        if keys[K_w]:
+            player_rect.y -= jump_height
+            current_color = choice(player_colors)
+        if keys[K_s]:
+            player_rect.y += jump_height
+            current_color = choice(player_colors)
 
     bg_x -= 2
     if bg_x <= -window_size[0]:
@@ -97,7 +88,9 @@ while True:
         clock.tick(60)
         continue
 
-    window.blit(player_img, player_rect)
+    colored_player = player_img.copy()
+    colored_player.fill(current_color + (0,), special_flags=BLEND_RGB_ADD)
+    window.blit(colored_player, player_rect)
 
     for pie in pies[:]:
         if not lose:
@@ -118,13 +111,8 @@ while True:
     score_text = main_font.render(str(int(score)), True, (0,0,0))
     window.blit(score_text, (window_size[0]//2 - score_text.get_width()//2, 40))
 
-    volume = get_volume_and_save()
-
     if not lose:
-        if volume > voice_threshold:
-            player_rect.y -= int(200 * volume) 
-        else:
-            player_rect.y += 8
+        player_rect.y += fall_speed
 
     if player_rect.y >= window_size[1] - player_rect.h:
         lose = True
