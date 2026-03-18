@@ -122,7 +122,7 @@ while True:
 
     if not lose:
         if volume > voice_threshold:
-            player_rect.y -= int(200 * volume)  # чем громче — тем выше
+            player_rect.y -= int(200 * volume) 
         else:
             player_rect.y += 8
 
