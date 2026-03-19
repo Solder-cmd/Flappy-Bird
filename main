@@ -1,5 +1,5 @@
 from pygame import *
-from random import randint, choice
+from random import randint
 
 init()
 window_size = 1200, 800
@@ -11,11 +11,12 @@ bg = transform.scale(bg, window_size)
 
 player_img = image.load("player.png").convert_alpha()
 player_img = transform.scale(player_img, (100, 100))
+
 player_colors = [(255,0,0), (0,255,0), (0,0,255), (255,255,0)]
+current_color = player_colors[0]
 
 bg_x = 0
 player_rect = Rect(150, window_size[1]//2 - 100, 100, 100)
-current_color = choice(player_colors)
 
 def generate_pipes(count, pipe_width=140, gap=280, min_height=50, max_height=440, distance=650):
     pipes = []
@@ -37,6 +38,8 @@ small_font = font.Font(None, 50)
 score = 0
 lose = False
 menu = True
+color_menu = False
+
 y_vel = 2
 
 button_rect = Rect(window_size[0]//2 - 150, window_size[1]//2 + 40, 300, 70)
@@ -44,29 +47,45 @@ button_rect = Rect(window_size[0]//2 - 150, window_size[1]//2 + 40, 300, 70)
 jump_height = 20
 fall_speed = 8
 
+color_buttons = []
+for i, color in enumerate(player_colors):
+    rect = Rect(300 + i*150, 400, 100, 100)
+    color_buttons.append((rect, color))
+
 while True:
     keys = key.get_pressed()
 
     for e in event.get():
         if e.type == QUIT:
             quit()
+
         if e.type == MOUSEBUTTONDOWN:
-            if menu or lose:
+
+            if menu:
                 if button_rect.collidepoint(mouse.get_pos()):
                     menu = False
+                    color_menu = True
+
+            elif color_menu:
+                for rect, color in color_buttons:
+                    if rect.collidepoint(mouse.get_pos()):
+                        current_color = color
+                        color_menu = False
+
+
+            elif lose:
+                if button_rect.collidepoint(mouse.get_pos()):
                     lose = False
                     score = 0
                     pies = generate_pipes(10)
                     player_rect.y = window_size[1]//2 - 100
                     y_vel = 2
 
-    if not menu and not lose:
+    if not menu and not color_menu and not lose:
         if keys[K_w]:
             player_rect.y -= jump_height
-            current_color = choice(player_colors)
         if keys[K_s]:
             player_rect.y += jump_height
-            current_color = choice(player_colors)
 
     bg_x -= 2
     if bg_x <= -window_size[0]:
@@ -83,6 +102,17 @@ while True:
         text = small_font.render("START", True, (0,0,0))
         window.blit(text, (button_rect.centerx - text.get_width()//2,
                            button_rect.centery - text.get_height()//2))
+
+        display.update()
+        clock.tick(60)
+        continue
+
+    if color_menu:
+        title = main_font.render("CHOOSE COLOR", True, (255,255,255))
+        window.blit(title, (window_size[0]//2 - title.get_width()//2, 200))
+
+        for rect, color in color_buttons:
+            draw.rect(window, color, rect)
 
         display.update()
         clock.tick(60)
